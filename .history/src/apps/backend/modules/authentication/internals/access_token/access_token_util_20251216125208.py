@@ -11,7 +11,7 @@ from modules.config.config_service import ConfigService
 class AccessTokenUtil:
     @staticmethod
     def generate_access_token(*, account: Account) -> AccessToken:
-        jwt_signing_key = ConfigService.get_value("jwt.secret_key")
+          jwt_signing_key = ConfigService.get_value("jwt.secret_key")
         jwt_expiry = timedelta(days=ConfigService[int].get_value(key="accounts.token_expiry_days"))
         expiry_time = datetime.now() + jwt_expiry
 

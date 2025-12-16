@@ -17,7 +17,7 @@ from modules.task.rest_api.task_rest_api_server import TaskRestApiServer
 from scripts.bootstrap_app import BootstrapApp
 
 # --- 1. CORRECT IMPORT ---
-#from modules.comment.rest_api.comment_router import CommentRouter
+//from modules.comment.rest_api.comment_router import CommentRouter
 # -------------------------
 
 load_dotenv()
