@@ -16,10 +16,21 @@ from modules.logger.logger_manager import LoggerManager
 from modules.task.rest_api.task_rest_api_server import TaskRestApiServer
 from scripts.bootstrap_app import BootstrapApp
 
+# --- 1. CORRECT IMPORT ---
+from modules.comment.rest_api.comment_router import CommentRouter
+# -------------------------
+
 load_dotenv()
 
 app = Flask(__name__)
-cors = CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+
+# --- TEMPORARY DEBUGGING CODE ---
+app.config['SECRET_KEY'] = "secret"
+app.config['JWT_SECRET_KEY'] = "secret"
+# ----------------------------------------------
+
+# Allow specific frontend port AND allow credentials (cookies/tokens)
+CORS(app, resources={r"/*": {"origins": "http://localhost:3005"}}, supports_credentials=True)
 
 # Mount deps
 LoggerManager.mount_logger()
@@ -27,20 +38,7 @@ LoggerManager.mount_logger()
 # Run bootstrap tasks
 BootstrapApp().run()
 
-# Connect to Temporal Server
-try:
-    ApplicationService.connect_temporal_server()
-
-    # Start the health check worker
-    # In production, it is optional to run this worker
-    ApplicationService.schedule_worker_as_cron(cls=HealthCheckWorker, cron_schedule="*/10 * * * *")
-
-except WorkerClientConnectionError as e:
-    Logger.critical(message=e.message)
-
-
 # Apply ProxyFix to interpret `X-Forwarded` headers if enabled in configuration
-# Visit: https://flask.palletsprojects.com/en/stable/deploying/proxy_fix/ for more information
 if ConfigService.has_value("is_server_running_behind_proxy") and ConfigService[bool].get_value(
     "is_server_running_behind_proxy"
 ):
@@ -60,11 +58,19 @@ api_blueprint.register_blueprint(task_blueprint)
 
 app.register_blueprint(api_blueprint)
 
+# --- 2. CORRECT REGISTRATION ---
+# We register this directly to 'app' because CommentRouter uses 'app.add_url_rule'
+CommentRouter.register(app)
+# -------------------------------
+
 # Register frontend elements
 app.register_blueprint(img_assets_blueprint)
 app.register_blueprint(react_blueprint)
 
-
 @app.errorhandler(AppError)
 def handle_error(exc: AppError) -> ResponseReturnValue:
     return jsonify({"message": exc.message, "code": exc.code}), exc.http_code or 500
+
+if __name__ == "__main__":
+    # Start the Flask development server
+    app.run(debug=True, port=8080, host="0.0.0.0")
